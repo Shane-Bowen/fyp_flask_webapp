@@ -37,6 +37,7 @@ def get_previous_inputs(date):
     
     return previous_inputs, scaler
 
+#invert scale prediction
 def invert_scailing(previous_inputs, prediction, scaler):
     
     # specify the number of days and features 
