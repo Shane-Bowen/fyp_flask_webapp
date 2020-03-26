@@ -1,6 +1,9 @@
 ## ML-Flask-Webapp
 This is a Flask web app with machine learning, with the goal of allowing users to predict volume of tests using the web app.
 
+### Prerequisites
+You must have Scikit Learn, Pandas, Numpy, Keras (for Machine Learning Model) and Flask (for API) installed.
+
 ### Project Structure
 This project has six major parts :
 1. models - This folder contains code for our Machine Learning model to predict volume tests based on training data in 'company_report_2.csv' file.
