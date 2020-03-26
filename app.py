@@ -7,7 +7,6 @@ from tensorflow import keras
 app = Flask(__name__)
 app.debug = True
 app.secret_key = 'development key'
-model = keras.models.load_model('./models/model.h5')
 
 @app.route('/')
 def home():
@@ -19,9 +18,11 @@ def predict():
     For rendering results on HTML GUI
     '''
     #int_features = [int(x) for x in request.form.values()]
-    #final_features = [np.array(int_features)]co
+    #final_features = [np.array(int_features)]
+    
+    model = keras.models.load_model(f"./models/model_{request.form['company_id']}.h5")
             
-    final_features, scaler = get_previous_inputs(request.form['date'])
+    final_features, scaler = get_previous_inputs(request.form['date'], request.form['company_id'])
     prediction = model.predict(final_features)
             
     inv_prediction = invert_scailing(final_features, prediction, scaler)
