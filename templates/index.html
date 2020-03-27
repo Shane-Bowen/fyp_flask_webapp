@@ -6,6 +6,7 @@
     <title>Volume Tests Predictor</title>    
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
 
     {% with messages = get_flashed_messages() %}
        {% if messages %}
@@ -22,21 +23,72 @@
 </head>
 
 <body>
- <div class="predict_div">
-	<h1>Volume Tests Predictor</h1>
+<h1 style="margin-top: 15px">Volume Tests Predictor</h1>
+ <div class="main_div">
+        <form action="{{ url_for('predict')}}"method="post">
+            <div class="form-row" style="margin: 15px auto; width: fit-content; display: inline-flex;">
+                <div class="col" style="margin: auto; width: 200px;">
+                    <!-- <input type="number" name="company_id" placeholder="Company" required="required" /> -->
+                    <select class="custom-select" type="number" name="company_id" required="required">
+                        <option value=1>Company A</option>
+                        <option value=2>Company B</option>
+                        <option value=6>Company C</option>
+                        <option value=9>Company D</option>
+                        <option value=17>Company E</option>
+                    </select>
+                </div>
+                <div class="col" style="margin: auto;">    
+                    <input type="date" name="date" placeholder="Date" required="required" />
+                </div>
+                <div class="col">    
+                    <button type="submit" class="btn btn-primary btn-block btn-large">Predict</button>
+                </div>
+            </div>
+        </form>
+    <br>
+    <h5>{{ prediction_text }} </h5>
 
-     <!-- Main Input For Receiving Query to our ML -->
-    <form action="{{ url_for('predict')}}"method="post">
-        	<input type="number" name="company_id" placeholder="Company" required="required" />
-    	<input type="date" name="date" placeholder="Date" required="required" />
-        <button type="submit" class="btn btn-primary btn-block btn-large">Predict</button>
-    </form>
-
-   <br>
-   <br>
-   <h5>{{ prediction_text }} </h5>
-
+    <div class="graph">
+        <canvas id="myChart"></canvas>
+    </div>
  </div>
+ 
+  <script>
+
+    var chartColors = {
+        red: 'rgb(255, 99, 132)',
+        orange: 'rgb(255, 159, 64)',
+        yellow: 'rgb(255, 205, 86)',
+        green: 'rgb(75, 192, 192)',
+        blue: 'rgb(54, 162, 235)',
+        purple: 'rgb(153, 102, 255)',
+        grey: 'rgb(231,233,237)'
+    };
+
+    // colors used as the point background colors as well as the fill colors
+    var fillColors = [chartColors.blue,  chartColors.blue, chartColors.blue, chartColors.blue, chartColors.blue, chartColors.blue, chartColors.blue, chartColors.red];
+
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        // The type of chart we want to create
+        type: 'line',
+    
+        // The data for our dataset
+        data: {
+            labels: {{ dates | safe }},
+            datasets: [{
+                data: {{ data }},
+                label: 'Volume Tests',
+                backgroundColor: chartColors.blue,
+                borderColor: chartColors.blue,
+                fill: true
+            }]
+        },
+    
+        // Configuration options go here
+        options: { }
+    });
+  </script>
 
 </body>
 </html>

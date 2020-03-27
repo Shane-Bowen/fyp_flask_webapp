@@ -25,6 +25,9 @@ def get_previous_inputs(date, company_id):
     target_date = datetime.strptime(date, "%Y-%m-%d")
     start_date = target_date - timedelta(days=n_days)
     previous_inputs = np.array([])
+
+    dates = []
+    volume_tests = []
     
     #df = df.loc[df['company_id'] == int(company_id)]
     
@@ -35,7 +38,9 @@ def get_previous_inputs(date, company_id):
     if target_date <= last_date + delta:    
         while start_date < target_date:
             cur_date = start_date.strftime("%Y-%m-%d")
+            dates.append(cur_date)
             previous_inputs = np.append(previous_inputs, [df.loc[cur_date]])
+            volume_tests.append(df.loc[cur_date]['volume_tests'])
             start_date += delta
     # else we will have to push back target and start date until inside dataframe range
     else:
@@ -44,8 +49,12 @@ def get_previous_inputs(date, company_id):
             start_date -= timedelta(days=7)
         while start_date < target_date:
             cur_date = start_date.strftime("%Y-%m-%d")
+            dates.append(cur_date)
             previous_inputs = np.append(previous_inputs, [df.loc[cur_date]])
+            volume_tests.append(df.loc[cur_date]['volume_tests'])
             start_date += delta
+
+    dates.append(date)
         
     previous_inputs = previous_inputs.reshape((n_days, n_features))
     
@@ -56,7 +65,7 @@ def get_previous_inputs(date, company_id):
     previous_inputs = scaler.fit_transform(previous_inputs)
     previous_inputs = previous_inputs.reshape((1, n_days, n_features))
     
-    return previous_inputs, scaler
+    return previous_inputs, scaler, volume_tests, dates
 
 #invert scale prediction
 def invert_scailing(previous_inputs, prediction, scaler):

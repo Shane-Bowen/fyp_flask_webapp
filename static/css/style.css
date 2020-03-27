@@ -8,14 +8,14 @@ body {
 	width: 100%;
 	height:100%;
 	letter-spacing:1.2px;
-	background: -webkit-radial-gradient(0% 100%, ellipse cover, rgba(104,128,138,.4) 10%,rgba(138,114,76,0) 40%), linear-gradient(to bottom,  rgba(57,173,219,.25) 0%,rgba(42,60,87,.4) 100%), linear-gradient(135deg,  #670d10 0%,#092756 100%);
+	zbackground: -webkit-radial-gradient(0% 100%, ellipse cover, rgba(104,128,138,.4) 10%,rgba(138,114,76,0) 40%), linear-gradient(to bottom,  rgba(57,173,219,.25) 0%,rgba(42,60,87,.4) 100%), linear-gradient(135deg,  #670d10 0%,#092756 100%);
 }
 
-.predict_div { 
+.form_row { 
 	width:400px;
 	color: #fff;
 	margin: 0 auto;
-	margin-top: 14%
+	margin-top: 7%
 }
 
 .predict_div h1 { 
@@ -25,16 +25,11 @@ body {
     text-align:center; 
 }
 
-.predict_div h5 {
-    color: #fff; 
-    text-align:center;
-}
-
 .predict_div input { 
 	width: 100%; 
 	background: rgba(0,0,0,0.3);
 	margin-bottom: 10px;
-	padding: 10px;
+	padding: none;
 	color: #fff;
 	border: 1px solid rgba(0,0,0,0.3);
 	border-radius: 4px;
@@ -43,5 +38,25 @@ body {
 }
 
 ::placeholder {
-  color: #fff;
+  color: #000000;
+}
+
+h1 {
+	margin: 30px auto;
+	width: fit-content;
+}
+
+.main_div h5 {
+    text-align:center;
+}
+
+.graph {
+	margin: 30px auto; 
+	width:1000px; 
+}
+
+.main_div {
+	margin: 15px auto;
+	width: fit-content;
+	height: fit-content;
 }

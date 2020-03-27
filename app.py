@@ -22,12 +22,13 @@ def predict():
     
     model = keras.models.load_model(f"./models/model_{request.form['company_id']}.h5")
             
-    final_features, scaler = get_previous_inputs(request.form['date'], request.form['company_id'])
+    final_features, scaler, volume_tests, dates = get_previous_inputs(request.form['date'], request.form['company_id'])
     prediction = model.predict(final_features)
             
     inv_prediction = invert_scailing(final_features, prediction, scaler)
+    volume_tests.append(int(round(inv_prediction[0])))
     
-    return render_template('index.html', prediction_text='Volume Tests should be {}'.format(int(round(inv_prediction[0]))))
+    return render_template('index.html', prediction_text='Volume Tests should be {}'.format(int(round(inv_prediction[0]))), data=volume_tests, dates=dates)
 
 if __name__ == "__main__":
     app.run(debug=True)
