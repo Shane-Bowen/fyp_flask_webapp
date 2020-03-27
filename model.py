@@ -99,8 +99,8 @@ def get_previous_inputs(date, company_id, df, n_days, n_features):
     
     return previous_inputs
 
-#company_list = [1, 2, 6, 9, 17]
-company_list = [2]
+company_list = [1, 2, 6, 9, 17]
+#company_list = [2]
 
 for company in company_list:
     
