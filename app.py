@@ -26,9 +26,9 @@ def predict():
     prediction = model.predict(final_features)
             
     inv_prediction = invert_scailing(final_features, prediction, scaler)
-    volume_tests.append(int(round(inv_prediction[0])))
+    #volume_tests.append(int(round(inv_prediction[0])))
     
-    return render_template('index.html', prediction_text='Volume Tests should be {}'.format(int(round(inv_prediction[0]))), data=volume_tests, dates=dates)
+    return render_template('index.html', prediction_text='Volume Tests should be {}'.format(int(round(inv_prediction[0]))), input_data=volume_tests, prediction_data=[int(round(inv_prediction[0]))], dates=dates)
 
 if __name__ == "__main__":
     app.run(debug=True)

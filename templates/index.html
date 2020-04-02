@@ -54,39 +54,63 @@
  </div>
  
   <script>
+    
+    join_date = {{ dates | safe}}.slice(-2)[0]
+
+    //populate prediction_data with null and last input_data
+    prediction_data = []
+    for(i=0; i < {{ input_data }}.length; i++){
+        if(i == {{ input_data }}.length -1){
+            prediction_data.push({{ input_data }}[i]);
+        }
+        else{
+            prediction_data.push(null);
+        }
+    }
+
+    prediction_data.push({{ prediction_data }}[0])
 
     var chartColors = {
-        red: 'rgb(255, 99, 132)',
-        orange: 'rgb(255, 159, 64)',
-        yellow: 'rgb(255, 205, 86)',
-        green: 'rgb(75, 192, 192)',
-        blue: 'rgb(54, 162, 235)',
-        purple: 'rgb(153, 102, 255)',
-        grey: 'rgb(231,233,237)'
-    };
-
-    // colors used as the point background colors as well as the fill colors
-    var fillColors = [chartColors.blue,  chartColors.blue, chartColors.blue, chartColors.blue, chartColors.blue, chartColors.blue, chartColors.blue, chartColors.red];
+        red: 'rgb(255, 0, 0)',
+        blue: 'rgb(54, 162, 255)',
+    };    
 
     var ctx = document.getElementById('myChart').getContext('2d');
+    Chart.defaults.global.spanGaps = false;
     var chart = new Chart(ctx, {
-        // The type of chart we want to create
         type: 'line',
-    
-        // The data for our dataset
         data: {
             labels: {{ dates | safe }},
             datasets: [{
-                data: {{ data }},
-                label: 'Volume Tests',
+                data: {{ input_data }},
+                label: 'Input Data',
                 backgroundColor: chartColors.blue,
                 borderColor: chartColors.blue,
-                fill: false
+                fill: false,
+                lineTension: 0
+            },
+            {
+                data: prediction_data,
+                label: 'Prediction',
+                backgroundColor: chartColors.red,
+                borderColor: chartColors.red,
+                fill: false,
+                lineTension: 0
             }]
         },
     
-        // Configuration options go here
-        options: { }
+        options: {
+            tooltips: {
+                filter: function (tooltipItem, data) {
+                    var label = data.labels[tooltipItem.index];
+                    if (label == join_date && tooltipItem.datasetIndex == 1) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
+            }
+         }
     });
   </script>
 
