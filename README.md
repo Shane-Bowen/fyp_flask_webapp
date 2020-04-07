@@ -6,7 +6,7 @@ You must have Scikit Learn, Pandas, Numpy, Keras (for Machine Learning Model) an
 
 ### Project Structure
 This project has six major parts :
-1. models - This folder contains code for our Machine Learning model to predict volume tests based on training data in 'company_report_2.csv' file.
+1. models - This folder contains code for our Machine Learning model to predict volume tests based on our training data.
 2. app.py - This contains Flask APIs that receives input from user, computes the predicted value based on our model and returns it.
 3. controller.py - This contains any logic that we need for our web app to work.
 4. templates - This folder contains the HTML template to allow user to enter inputs and display the predicted volume tests
