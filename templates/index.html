@@ -7,19 +7,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
-
-    {% with messages = get_flashed_messages() %}
-       {% if messages %}
-         <ul class="flashes">
-            {% for message in messages %} 
-             <div class="message_flash">{{ message }}</div>
-            {% endfor %}
-        </ul>
-      {% endif %}
-     {% endwith %}
-    {% block body %}
-    {% endblock %}
-  
 </head>
 
 <body>
@@ -28,7 +15,6 @@
         <form action="{{ url_for('predict')}}"method="post">
             <div class="form-row" style="margin: 15px auto; width: fit-content; display: inline-flex;">
                 <div class="col" style="margin: auto; width: 200px;">
-                    <!-- <input type="number" name="company_id" placeholder="Company" required="required" /> -->
                     <select class="custom-select" type="number" name="company_id" required="required">
                         <option value=1>Company A</option>
                         <option value=2>Company B</option>
@@ -46,73 +32,84 @@
             </div>
         </form>
     <br>
-    <h5>{{ prediction_text }} </h5>
+    <h5 id ="myHeader"></h5>
 
     <div class="graph">
         <canvas id="myChart"></canvas>
     </div>
  </div>
  
-  <script>
-    
-    join_date = {{ dates | safe}}.slice(-2)[0]
+    <script type=text/javascript>
+        myHeader.innerText = "Volume Tests should be " + {{ prediction_data | safe }}["{{date_selected | safe}}"];
 
-    //populate prediction_data with null and last input_data
-    prediction_data = []
-    for(i=0; i < {{ input_data }}.length; i++){
-        if(i == {{ input_data }}.length -1){
-            prediction_data.push({{ input_data }}[i]);
+        // initalize variables
+        dates = []
+        input_data  = []
+        prediction_data = []
+
+        // populate input_data
+        for(var date in {{ input_data | safe }}){
+            input_data.push({{ input_data | safe }}[date])
+            dates.push(date)
         }
-        else{
-            prediction_data.push(null);
+
+        // date where input and prediction meet in graph
+        join_date = dates.slice(-1)[0]
+
+        // populate prediction_data with null and last input_data
+        for(i=0; i < input_data.length; i++){
+            if(i == input_data.length -1){
+                prediction_data.push(input_data[i]);
+            }
+            else{
+                prediction_data.push(null);
+            }
         }
-    }
 
-    prediction_data.push({{ prediction_data }}[0])
+        // populate rest of prediction_data
+        for(var date in {{ prediction_data | safe }}){
+            prediction_data.push({{ prediction_data | safe }}[date])
+            dates.push(date)
+        }
 
-    var chartColors = {
-        red: 'rgb(255, 0, 0)',
-        blue: 'rgb(54, 162, 255)',
-    };    
-
-    var ctx = document.getElementById('myChart').getContext('2d');
-    Chart.defaults.global.spanGaps = false;
-    var chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {{ dates | safe }},
-            datasets: [{
-                data: {{ input_data }},
-                label: 'Input Data',
-                backgroundColor: chartColors.blue,
-                borderColor: chartColors.blue,
-                fill: false,
-                lineTension: 0
+        // myChart
+        var ctx = document.getElementById('myChart').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    data: input_data,
+                    label: 'Input',
+                    backgroundColor: 'rgb(54, 162, 255)',
+                    borderColor: 'rgb(54, 162, 255)',
+                    fill: false,
+                    lineTension: 0
+                },
+                {
+                    data: prediction_data,
+                    label: 'Prediction',
+                    backgroundColor: 'rgb(255, 0, 0)',
+                    borderColor: 'rgb(255, 0, 0)',
+                    fill: false,
+                    lineTension: 0
+                }]
             },
-            {
-                data: prediction_data,
-                label: 'Prediction',
-                backgroundColor: chartColors.red,
-                borderColor: chartColors.red,
-                fill: false,
-                lineTension: 0
-            }]
-        },
-    
-        options: {
-            tooltips: {
-                filter: function (tooltipItem, data) {
-                    var label = data.labels[tooltipItem.index];
-                    if (label == join_date && tooltipItem.datasetIndex == 1) {
-                        return false;
-                    } else {
-                        return true;
+
+            options: {
+                tooltips: { // only show 1 value in tooltips
+                    filter: function (tooltipItem, data) {
+                        var label = data.labels[tooltipItem.index];
+                        if (label == join_date && tooltipItem.datasetIndex == 1) {
+                            return false;
+                        } else {
+                            return true;
+                        }
                     }
                 }
             }
-         }
-    });
-  </script>
+        });
+    </script>
 
 </body>
 </html>
