@@ -234,7 +234,7 @@ def outage(company, outage_threshold, start_date, end_date):
     f = open(filename, "w+")
     writer = csv.writer(f)
     writer.writerow(['Outage Report'])
-    writer.writerow(['date', 'company_id', 'outage_hrs', 'outage_mins', 'outage_secs'])
+    writer.writerow(['date', 'company_id', 'outage_hrs'])
 
     #Intitialzie Dictionary
     outage_dict = {}

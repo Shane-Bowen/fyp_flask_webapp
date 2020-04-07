@@ -346,6 +346,10 @@ def findInitialOutage(jp_table, company, start_date, end_date):
     print("###################################################################################")
     print("Find Initial Outage")
 
+    # set the start_date to 1 month ago
+    start_date -= relativedelta(months=1)
+
+    # connect to db
     dirname = os.path.dirname(__file__)
     config_file = os.path.join(dirname, './config/config.json')
     with open(config_file) as json_data_file:
@@ -381,6 +385,10 @@ def findInitialOutage(jp_table, company, start_date, end_date):
 def findOutageEnd(fail, outage_threshold, company, start_date, end_date):
     # This function searches for the end of the outage by using a shifting window method on tests until success criteria for outage finished has been met
 
+    # set the start date 1 month ago
+    start_date -= relativedelta(months=1)
+
+    # connect to db
     dirname = os.path.dirname(__file__)
     config_file = os.path.join(dirname, './config/config.json')
     with open(config_file) as json_data_file:
@@ -469,6 +477,9 @@ def daily_outage(fail, outage_duration, company, start_date, end_date, values_di
     print("###################################################################################")
     print("Find Daily Outages")
 
+    value_dict_key = start_date
+    start_date -= relativedelta(months=1)
+
     day_start_time = fail[2].replace(hour=0,second=0,minute=0)
     outage_start_time = datetime.strptime(str(fail[2]), '%Y-%m-%d %H:%M:%S')
     day_end_time = fail[2].replace(hour=23,second=59,minute=59)
@@ -482,10 +493,11 @@ def daily_outage(fail, outage_duration, company, start_date, end_date, values_di
             print(that_day_duration)
 
             if start_date <= day_start_time.date() <= end_date:
-                if 'outage' in values_dict[day_start_time.strftime("%Y-%m-%d")]: #if key is already in dictionary
-                    values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] = values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] + that_day_duration
-                else:
-                    values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] = that_day_duration
+                if day_start_time.date() >= value_dict_key:
+                    if 'outage' in values_dict[day_start_time.strftime("%Y-%m-%d")]: #if key is already in dictionary
+                        values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] = values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] + that_day_duration
+                    else:
+                        values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] = that_day_duration
 
                 day_start_time = day_start_time + timedelta(days=1) #add 1 day to time
                 outage_start_time = day_start_time
@@ -498,12 +510,13 @@ def daily_outage(fail, outage_duration, company, start_date, end_date, values_di
             print("Outage Duration fits")
 
             if start_date <= day_start_time.date() <= end_date:
-                if 'outage' in values_dict[day_start_time.strftime("%Y-%m-%d")]:
-                    values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] = values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] + outage_duration
-                    print(values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] + outage_duration)
-                else:
-                    values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] = outage_duration
-                    print(outage_duration)
+                if day_start_time.date() >= value_dict_key:
+                    if 'outage' in values_dict[day_start_time.strftime("%Y-%m-%d")]:
+                        values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] = values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] + outage_duration
+                        print(values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] + outage_duration)
+                    else:
+                        values_dict[day_start_time.strftime("%Y-%m-%d")]['outage'] = outage_duration
+                        print(outage_duration)
                 outage_duration = 0
                 break
             else:
@@ -618,12 +631,53 @@ def daily_followup_tests(jp_table, company, start_date, end_date, values_dict):
 
 def getMinCommit(company, start_date, end_date):
     #This functions retrieves the min_commit for a company given a time range and return a list of min_commits
-    
+
+    # connect to db
     dirname = os.path.dirname(__file__)
-    min_commit_file = os.path.join(dirname, '../billing/minimum_commits_report.csv')
-    df = pd.read_csv(min_commit_file)
+    config_file = os.path.join(dirname, './config/config.json')
+    with open(config_file) as json_data_file:
+        data = json.load(json_data_file)
+
+    # Open database connection
+    db = MySQLdb.connect(data['mysql']['host'], data['mysql']['user'], data['mysql']['passwd'], data['mysql']['db'])
+
+    # prepare a cursor object using cursor() method
+    cursor = db.cursor()
+    
+    # read csv
+    dirname = os.path.dirname(__file__)
+    min_commit_file = os.path.join(dirname, '../reports/minimum_commits_report.csv')
+    df = pd.read_csv(min_commit_file) 
     results = df.loc[df['company'] == int(company)]
 
+    # if newer date and not in csv file, then read from db
+    if end_date > datetime.strptime(results.keys()[-1], '%Y-%m-%d').date():
+        sql = """SELECT
+            min_commitment
+        FROM
+            company_billing_with_call_bundle
+        WHERE
+            company_id = {0} AND
+            min_commitment > 0""".format(company)
+
+        print(sql)
+
+        # Execute the SQL command
+        cursor.execute(sql)
+
+        val = cursor.fetchone() 
+        # if val is None, set min_commit to nan
+        if val is None:
+            min_commit = float('NaN')
+        # else set min_commit to first val
+        else:
+            min_commit = float(val[0])
+
+        # append key and min_commit to result df
+        last_date_of_month = datetime(end_date.year, end_date.month, 1) + relativedelta(months=1, days=-1)
+        key = last_date_of_month.strftime("%Y-%m-%d") #convert to string
+        results[key] = min_commit
+    
     print(results)
     return results
 
@@ -766,15 +820,17 @@ def main(company_list, outage_threshold, start_date, end_date):
     # This function calls all the different functions, stores result in a dictionary and writes to a csv file in the current directory (company_report.csv)  
 
     for company in company_list:
-
         dirname = os.path.dirname(__file__)
         filename = os.path.join(dirname, """../reports/company_report_{}.csv""".format(company))
-        #filename = os.path.join(dirname, """../reports/company_report.csv""")
-        print(filename)
-        f = open(filename, "w+")
-        writer = csv.writer(f)
-        writer.writerow(['volume_tests', 'company_id', 'company_type', 'time', 'date', 'month', 'year', 'day', 'is_weekend', 'season', 'avg_pesq_score', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'followup_tests', 'min_commit'])
-
+        
+        # check if file exists
+        if os.path.isfile(filename):
+            f = open(filename, "a+")
+            writer = csv.writer(f)
+        else:
+            f = open(filename, "w+")
+            writer = csv.writer(f)
+            writer.writerow(['volume_tests', 'company_id', 'company_type', 'time', 'date', 'month', 'year', 'day', 'is_weekend', 'season', 'avg_pesq_score', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'followup_tests', 'min_commit'])
 
         company_min_commit = getMinCommit(company, start_date, end_date)
         company_type = getCompanyType(company)[0]
@@ -806,6 +862,8 @@ def main(company_list, outage_threshold, start_date, end_date):
                 print(fail)
                 outage_duration = findOutageEnd(fail, outage_threshold, company, start_date, end_date)
                 values_dict = daily_outage(fail, outage_duration, company, start_date, end_date, values_dict)
+
+        print(values_dict)
 
         #Write to CSV File
         for date, dictionary in values_dict.items():
@@ -867,7 +925,6 @@ def main(company_list, outage_threshold, start_date, end_date):
                 hours = 0
             
             writer.writerow([dictionary['volume'], company, company_type, time, date, month, year, day, isWeekend, season, dictionary['pesq'], dictionary['quality_too_poor'], dictionary['busy'], dictionary['unable'], hours, len(dictionary['test_types']), dictionary['numbers'], dictionary['followup'], company_min_commit[key].values[0]])
-    #sort_csv()
     print("Script Finished")
     f.close()
 
@@ -885,14 +942,13 @@ if __name__ == "__main__":
 
     outage_threshold = sys.argv[2]
 
-    # Check if the number of arguements passed is greater than 4, if not then set start and end date to last month's date
-    if len(sys.argv) > 2:
+    # Check if the number of arguements passed is greater than 4
+    if len(sys.argv) > 4:
         start_date = datetime.strptime('%s' % sys.argv[3] ,'%Y-%m-%d').date()
         end_date = datetime.strptime('%s' % sys.argv[4] ,'%Y-%m-%d').date()
     else:
-        yesterday = datetime.today() - timedelta(months=1)
-        start_date = datetime(yesterday.year,yesterday.month,yesterday.day)
-        end_date = datetime(yesterday.year,yesterday.month,yesterday.day)
-    
+        start_date = datetime.strptime('%s' % sys.argv[3] ,'%Y-%m-%d').date()
+        end_date = start_date
+        
     # Call the outage function with parameters passed in
     main(company_list, outage_threshold, start_date, end_date)

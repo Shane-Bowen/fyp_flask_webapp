@@ -55,7 +55,6 @@ def min_commit(start_date, end_date):
     dirname = os.path.dirname(__file__)
     filename = os.path.join(dirname, '../reports/minimum_commits_report.csv')
     f = open(filename, "w+")
-    parent = os.path.abspath('..')
     writer = csv.writer(f)
     #writer.writerow(['Minimum Commits Report'])
 
@@ -68,10 +67,17 @@ def min_commit(start_date, end_date):
         print(cur_date)
         cur_date += relativedelta(months=1)
         last_day_of_month = cur_date - relativedelta(days=1)
+        print(last_day_of_month.strftime("%Y-%m-%d"))
         heading.append(last_day_of_month.strftime("%Y-%m-%d"))
-        df = pd.read_csv("""./billing/companies_report_{1}.csv""".format(last_day_of_month), encoding = "ISO-8859-1")
+        df = pd.read_csv("""../billing/companies_report_{0}.csv""".format(last_day_of_month.strftime("%Y-%m-%d")), encoding = "ISO-8859-1")
         print(df[['Company', 'Min Commit']])
-        for i in range(len(df)) : 
+        for i in range(len(df)):
+            if isinstance(df.iloc[i]['Min Commit'], np.float64):
+                min_commit = df.iloc[i]['Min Commit']
+            elif isinstance(df.iloc[i]['Min Commit'], float):
+                min_commit = df.iloc[i]['Min Commit']
+            else:
+                min_commit = df.iloc[i]['Min Commit'].replace(",", "")
             print(df.iloc[i]['Company'], df.iloc[i]['Min Commit'])
             if df.iloc[i]['Company'] in company_ids:
                 company_id = company_ids[df.iloc[i]['Company']]
@@ -81,17 +87,17 @@ def min_commit(start_date, end_date):
             if company_id is not None:
                 print(company_id[0])
                 if company_id[0] in min_commit_dict: #if key is already in dictionary
-                    if np.isnan(float(df.iloc[i]['Min Commit'])):
+                    if np.isnan(float(min_commit)):
                         min_commit_dict[company_id[0]][last_day_of_month] = ''
                     else:
-                        min_commit_dict[company_id[0]][last_day_of_month] = float(df.iloc[i]['Min Commit'])
+                        min_commit_dict[company_id[0]][last_day_of_month] = float(min_commit)
                 else:
-                    if np.isnan(float(df.iloc[i]['Min Commit'])):
+                    if np.isnan(float(min_commit)):
                         min_commit_dict[company_id[0]] = {}
                         min_commit_dict[company_id[0]][last_day_of_month] = ''
                     else:
                         min_commit_dict[company_id[0]] = {}
-                        min_commit_dict[company_id[0]][last_day_of_month] = float(df.iloc[i]['Min Commit'])
+                        min_commit_dict[company_id[0]][last_day_of_month] = float(min_commit)
 
     pprint.pprint(min_commit_dict)
     writer.writerows([heading])
@@ -121,7 +127,7 @@ if __name__ == "__main__":
     # Check if the number of arguements passed is greater than 2, if not then set start and end date to last month's date
     if len(sys.argv) > 2:
         start_date = datetime.strptime('%s' % sys.argv[1] ,'%Y-%m-%d').date()
-        end_date = datetime.strptime('%s' % sys.argv[2] ,'%Y-%m-%d').date() 
+        end_date = datetime.strptime('%s' % sys.argv[2] ,'%Y-%m-%d').date()
     else:
         yesterday = datetime.today() - timedelta(months=1)
         start_date = datetime(yesterday.year,yesterday.month,yesterday.day)
