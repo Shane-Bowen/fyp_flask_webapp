@@ -222,9 +222,9 @@ for company in company_list:
     model.save(filename)
     
     print(company)
-
+    
     # plot actual vs prediction
-    num_days = 210
+    num_days = 30
     pyplot.plot(list(inv_y[:num_days]), label='actual')
     pyplot.plot(inv_yhat[:num_days], label='prediction')
     pyplot.legend()
