@@ -61,7 +61,7 @@ def invert_scailing(input_features, prediction, scaler):
     
     return pred_arr
 
-def history_accuracy(df, model, n_predict):
+def history_accuracy(df, model, n_predict, scaler):
 
     # store variables
     values = df.values
@@ -74,7 +74,6 @@ def history_accuracy(df, model, n_predict):
     values = values.astype('float32')
 
     # normalize features
-    scaler = MinMaxScaler(feature_range=(0, 1))
     scaled = scaler.fit_transform(values)
 
     # frame as supervised learning
@@ -103,9 +102,9 @@ def history_accuracy(df, model, n_predict):
     # get inverted prediction in array
     pred_arr = np.empty((test_X.shape[0], 1))
     for i in range(0, prediction.shape[1]):
+        # invert scaling for forecast
         prediction_col = prediction[:, i].reshape(len(prediction[:, i]), 1)
         inv_prediction = concatenate((prediction_col, test_X[:, -(n_features-1):]), axis=1)
-        # invert scaling for forecast
         inv_prediction = scaler.inverse_transform(inv_prediction)
         inv_prediction = inv_prediction[:, 0]
         inv_prediction = inv_prediction.reshape(len(inv_prediction), 1)
@@ -127,7 +126,7 @@ def history_accuracy(df, model, n_predict):
                 if np.isnan(score) == False:
                     accuracy_scores.append(score)
 
-    return round(np.mean(accuracy_scores), 2)
+    return round(np.mean(accuracy_scores), 2), test_X, scaler
 
 def get_prediciton(company_id, n_predict):
 
@@ -143,20 +142,18 @@ def get_prediciton(company_id, n_predict):
     df = df[['volume_tests', 'date', 'month', 'is_weekend', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'min_commit']]
     df = df.dropna(axis='columns')
     
-    accuracy_score = history_accuracy(df, model, int(n_predict))
+    # scaler
+    scaler = MinMaxScaler(feature_range=(0, 1))
+
+    # history accuracy
+    accuracy_score, test_X, scaler = history_accuracy(df, model, int(n_predict), scaler)
 
     # specify the number of days and features 
     n_days = 7
     n_features = df.shape[1]
 
-    # get last elements from df
-    input_features = df.tail(n_days).to_numpy()
-
-    # normalize features
-    scaler = MinMaxScaler(feature_range=(0, 1))
-
-    #normalize previous_input features
-    input_features = scaler.fit_transform(input_features)
+    # set input features
+    input_features = test_X[-1:]
     input_features = input_features.reshape((1, n_days, n_features))
 
     # make prediction
@@ -166,8 +163,8 @@ def get_prediciton(company_id, n_predict):
     # specify cur_date and end_date
     cur_date = datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d")
     end_date = cur_date + timedelta(days=int(n_predict))
+    
     i = 0
-
     # append predictions to dictionary
     while cur_date < end_date:
         cur_date += timedelta(days=1)

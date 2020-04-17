@@ -3,18 +3,15 @@ import os
 import numpy as np
 from numpy import concatenate
 from math import sqrt
-from matplotlib import pyplot
 from pandas import read_csv
 from pandas import DataFrame
 from pandas import concat
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
-from sklearn.metrics import accuracy_score
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.layers import Dense, Dropout, LSTM
-from datetime import datetime, timedelta
-from tensorflow import keras
+from tensorflow.keras.layers import Dense, Dropout, LSTM, BatchNormalization
+from keras.regularizers import l2
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning) 
 
@@ -46,13 +43,12 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
         agg.dropna(inplace=True)
     return agg
 
-company_list = [1, 2, 6, 9, 17]
+company_list = [2, 9, 49, 93, 130]
+predict_list = [1, 7, 14, 21, 28]
 #company_list = [2]
-#predict_list = [7, 30, 90]
-predict_list = [1]
+#predict_list = [1]
 
 for company in company_list:
-    
     for n_predict in predict_list:
         dirname = os.path.dirname(__file__)
         filename = os.path.join(dirname, """reports/company_report_{0}.csv""".format(company))
@@ -101,9 +97,11 @@ for company in company_list:
         model = Sequential()
         
         model.add(LSTM(128, input_shape=(train_X.shape[1], train_X.shape[2])))
+        #model.add(LSTM(128, kernel_regularizer=l2(0.01), recurrent_regularizer=l2(0.01), bias_regularizer=l2(0.01), input_shape=(train_X.shape[1], train_X.shape[2])))
         model.add(Dropout(0.1))
-        model.add(Dense(n_predict, kernel_initializer='lecun_uniform', activation='hard_sigmoid'))
-        optimizer = Adam(lr=0.001)
+        #model.add(BatchNormalization())
+        model.add(Dense(n_predict, kernel_initializer='lecun_uniform', activation='relu'))
+        optimizer = Adam(lr=0.001, decay=1e-6)
         model.compile(loss='mae', optimizer=optimizer, metrics=['accuracy'])
         
         # fit Model
@@ -121,56 +119,30 @@ for company in company_list:
         actual_arr = np.empty((test_X.shape[0], 1))
             
         for i in range(0, yhat.shape[1]):
+            # invert scaling for forecast
             yhat_col = yhat[:, i].reshape(len(yhat[:, i]), 1)
             inv_yhat = concatenate((yhat_col, test_X[:, -(n_features-1):]), axis=1)
-            # invert scaling for forecast
             inv_yhat = scaler.inverse_transform(inv_yhat)
             inv_yhat = inv_yhat[:, 0]
             inv_yhat = inv_yhat.reshape(len(inv_yhat), 1)
             pred_arr = np.append(pred_arr, inv_yhat, axis=1)
-        
         pred_arr = pred_arr[:,1:]
         
         for i in range(0, test_y.shape[1]):
             # invert scaling for actual
             test_y_col = test_y[:, i].reshape(len(test_y[:, i]), 1)
-            #test_y = test_y.reshape((len(test_y), 1))
             inv_y = concatenate((test_y_col, test_X[:, -(n_features-1):]), axis=1)
             inv_y = scaler.inverse_transform(inv_y)
             inv_y = inv_y[:,0]
-            
             inv_y = inv_y.reshape(len(inv_y), 1)
             actual_arr = np.append(actual_arr, inv_y, axis=1)
-            
         actual_arr = actual_arr[:,1:]
         
         # calculate RMSE
         for i in range(0, actual_arr.shape[1]):
-            act = actual_arr[:, i]
-            pred = pred_arr[:, i]
             rmse = sqrt(mean_squared_error(actual_arr[:, i], pred_arr[:, i]))
             print('t+{} RMSE: {:.3f}'.format(i+1, rmse))
             
         # Save the model
         filename = os.path.join(dirname, """models/model_{0}_n_{1}.h5""".format(company, n_predict))
         model.save(filename)
-                    
-# =============================================================================
-#         # calculate Accuracy Score
-#         for i in range(0, actual_arr.shape[1]):
-#             actual_arr = actual_arr.astype('int')
-#             pred_arr = pred_arr.astype('int')
-#             act = actual_arr[:, i].tolist()
-#             pred = pred_arr[:, i].tolist()
-#             acc_score = accuracy_score(actual_arr[:, i].tolist(), pred_arr[:, i].tolist())
-#             print('t+{} Acc Score: {:.3f}'.format(i+1, acc_score))
-# =============================================================================
-        
-# =============================================================================
-#     # plot actual vs prediction
-#     num_days = 90
-#     pyplot.plot(list(inv_y[:num_days]), label='actual')
-#     pyplot.plot(inv_yhat[:num_days], label='prediction')
-#     pyplot.legend()
-#     pyplot.show()
-# =============================================================================

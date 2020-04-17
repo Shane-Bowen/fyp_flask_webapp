@@ -58,12 +58,11 @@ def invert_scailing(input_features, prediction, scaler):
         inv_prediction = inv_prediction[:, 0]
         inv_prediction = inv_prediction.reshape(len(inv_prediction), 1)
         pred_arr = np.append(pred_arr, inv_prediction, axis=1)
-    
     pred_arr = pred_arr[:, n_features:]
     
     return pred_arr
 
-def history_accuracy(df, n_days, n_features, scaler):
+def history_accuracy(df, n_days, n_features, n_predict, scaler, model):
     
     # set values
     values = df.values
@@ -112,7 +111,6 @@ def history_accuracy(df, n_days, n_features, scaler):
     
     # calculate RMSE
     for i in range(0, pred_arr.shape[1]):
-        pred = pred_arr[:, i]
         rmse = sqrt(mean_squared_error(test_y[:, i], pred_arr[:, i]))
         print('t+{} RMSE: {:.3f}'.format(i+1, rmse))
         
@@ -128,24 +126,23 @@ def history_accuracy(df, n_days, n_features, scaler):
                 score = pred_arr[i][j] / test_y[i][j] * 100
                 if np.isnan(score) == False:
                     accuracy_scores.append(score)
-            print('Row=%d Column=%d, Expected=%.2f, Predicted=%.2f, Accuracy=%.2f%%' % (i+1, j+1, test_y[i][j], pred_arr[i][j], score ))
-    print("%.2f%% (+/- %.2f%%)" % (np.mean(accuracy_scores), np.std(accuracy_scores)))
     
-    return round(np.mean(accuracy_scores), 2)
+    return round(np.mean(accuracy_scores), 2), test_X
 
-def get_input_predict_data(df, n_days, n_features, scaler):
-    # get last elements from df
-    input_features = df.tail(n_days).to_numpy()
+def get_input_predict_data(df, test_X, n_days, n_features, n_predict, scaler, model):
     
-    #normalize previous_input features
-    input_features = scaler.fit_transform(input_features)
+    # store all input data and prediction data
+    input_data = {}
+    prediction_data = {}
+    
+    input_features = test_X[-1:]
     input_features = input_features.reshape((1, n_days, n_features))
     
     prediction = model.predict(input_features)
     inv_prediction = invert_scailing(input_features, prediction, scaler)
     
     cur_date = datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d")
-    end_date = cur_date + timedelta(days=7)
+    end_date = cur_date + timedelta(days=n_predict)
     
     i = 0
     #iterate cur_date
@@ -156,8 +153,7 @@ def get_input_predict_data(df, n_days, n_features, scaler):
         
     cur_date = datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d")
     end_date = cur_date
-    
-    cur_date -= timedelta(days=7)
+    cur_date -= timedelta(days=n_days)
     
     while cur_date < end_date:
         cur_date += timedelta(days=1)
@@ -165,32 +161,32 @@ def get_input_predict_data(df, n_days, n_features, scaler):
     
     return input_data, prediction_data
     
-def get_prediction(company_id, n_predict)
+def get_prediction(company_id, n_predict):
+    
+    # store variables        
+    n_days = 7
+    
+    # get model for that company
+    model = keras.models.load_model(f"./models/model_{company_id}_n_{n_predict}.h5")
+    
+    # load dataset
+    df = read_csv(f'./reports/company_report_' + company_id + '.csv', header=0, index_col="time")
+    df = df[['volume_tests', 'date', 'month', 'is_weekend', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'min_commit']]
+    df = df.dropna(axis='columns')
+    
+    # specify the number of days, features
+    n_features = df.shape[1]
+    
+    # normalize features
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    
+    score, test_X = history_accuracy(df, n_days, n_features, n_predict, scaler, model)
+    input_data, prediction_data = get_input_predict_data(df, test_X, n_days, n_features, n_predict, scaler, model)
+    
+    print(score)
+    print(input_data)
+    print(prediction_data)
 
-# store variables        
-n_days = 7
-
-# store all input data and prediction data
-input_data = {}
-prediction_data = {}
-
-# get model for that company
-model = keras.models.load_model(f"./models/model_{company_id}_n_{n_predict}.h5")
-
-# load dataset
-df = read_csv(f'./reports/company_report_' + company_id + '.csv', header=0, index_col="time")
-df = df[['volume_tests', 'date', 'month', 'is_weekend', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'min_commit']]
-df = df.dropna(axis='columns')
-
-# specify the number of days, features
-n_features = df.shape[1]
-
-# normalize features
-scaler = MinMaxScaler(feature_range=(0, 1))
-
-score = history_accuracy(df, n_days, n_features, scaler)
-input_data, prediction_data = get_input_predict_data(df, n_days, n_features, scaler)
-
-#print(score)
-#print(input_data)
-#print(prediction_data)
+company_id = '2'
+n_predict = 1
+get_prediction(company_id, n_predict)
