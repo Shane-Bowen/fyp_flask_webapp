@@ -683,3 +683,5 @@ volume_tests,company_id,company_type,time,date,month,year,day,is_weekend,season,
 32,9,Conference,2020-04-12,12,4,2020,Sun,1,Spring,4.107857,0,0,0,623.99,2,9,0,nan
 8552,9,Conference,2020-04-13,13,4,2020,Mon,0,Spring,3.8671939999999996,106,86,0,503.99,3,150,0,nan
 8563,9,Conference,2020-04-14,14,4,2020,Tues,0,Spring,3.8539719999999997,96,70,0,479.99,3,152,0,nan
+8506,9,Conference,2020-04-15,15,4,2020,Wed,0,Spring,3.847614,86,97,4,479.99,3,152,0,nan
+8385,9,Conference,2020-04-16,16,4,2020,Thurs,0,Spring,3.8599315,92,58,0,480.21,3,150,0,nan

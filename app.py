@@ -10,9 +10,8 @@ app.secret_key = 'development key'
 @app.route('/')
 def home():
 
-
     input_data, prediction_data, accuracy_score = get_prediciton('2', '7')
-
+    
     return render_template('index.html', input_data=input_data, prediction_data=prediction_data, accuracy_score=accuracy_score)
     #return render_template('index.html')
 

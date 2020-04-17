@@ -834,3 +834,5 @@ volume_tests,company_id,company_type,time,date,month,year,day,is_weekend,season,
 3542,17,Enterprise,2020-04-12,12,4,2020,Sun,1,Spring,4.063187,0,82,0,144.0,2,64,80,nan
 3535,17,Enterprise,2020-04-13,13,4,2020,Mon,0,Spring,4.040032,0,61,0,144.0,2,65,53,nan
 3451,17,Enterprise,2020-04-14,14,4,2020,Tues,0,Spring,4.022761,2,24,0,120.8,2,64,40,nan
+3446,17,Enterprise,2020-04-15,15,4,2020,Wed,0,Spring,4.01307,16,5,0,101.52,2,63,10,nan
+3473,17,Enterprise,2020-04-16,16,4,2020,Thurs,0,Spring,4.013671,7,59,5,108.93,2,63,60,nan
