@@ -109,10 +109,13 @@ def history_accuracy(df, n_days, n_features, n_predict, scaler, model):
     # slice prediction we need
     pred_arr = pred_arr[:,1:]
     
+    rmse_list = []
     # calculate RMSE
     for i in range(0, pred_arr.shape[1]):
         rmse = sqrt(mean_squared_error(test_y[:, i], pred_arr[:, i]))
+        rmse_list.append(rmse)
         print('t+{} RMSE: {:.3f}'.format(i+1, rmse))
+    print('Avg. RMSE: ', np.mean(rmse_list))
         
     # calculate accuracy score based on expected and predicted
     accuracy_scores = []    
@@ -134,7 +137,7 @@ def get_input_predict_data(df, test_X, n_days, n_features, n_predict, scaler, mo
     # store all input data and prediction data
     input_data = {}
     prediction_data = {}
-    
+        
     input_features = test_X[-1:]
     input_features = input_features.reshape((1, n_days, n_features))
     
@@ -145,10 +148,12 @@ def get_input_predict_data(df, test_X, n_days, n_features, n_predict, scaler, mo
     end_date = cur_date + timedelta(days=n_predict)
     
     i = 0
+    prediction_data_sum = 0
     #iterate cur_date
     while cur_date < end_date:
         cur_date += timedelta(days=1)
-        prediction_data[cur_date.strftime('%Y-%m-%d')] = int(round(inv_prediction[0][i]))
+        prediction_data[cur_date.strftime('%Y-%m-%d')] = float(round(inv_prediction[0][i]))
+        prediction_data_sum += int(round(inv_prediction[0][i]))
         i += 1
         
     cur_date = datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d")
@@ -159,6 +164,18 @@ def get_input_predict_data(df, test_X, n_days, n_features, n_predict, scaler, mo
         cur_date += timedelta(days=1)
         input_data[cur_date.strftime("%Y-%m-%d")] = df.loc[cur_date.strftime("%Y-%m-%d")]['volume_tests']
     
+    cur_date = datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d")
+    end_date = cur_date
+    cur_date -= timedelta(days=n_predict)
+    
+    input_data_sum = 0
+    while cur_date < end_date:
+        cur_date += timedelta(days=1)
+        input_data_sum += df.loc[cur_date.strftime("%Y-%m-%d")]['volume_tests']
+        
+    percent_change = ((prediction_data_sum - input_data_sum) / input_data_sum) * 100
+    print("Percent Change: ", percent_change)
+        
     return input_data, prediction_data
     
 def get_prediction(company_id, n_predict):
@@ -188,5 +205,5 @@ def get_prediction(company_id, n_predict):
     print(prediction_data)
 
 company_id = '2'
-n_predict = 1
+n_predict = 14
 get_prediction(company_id, n_predict)

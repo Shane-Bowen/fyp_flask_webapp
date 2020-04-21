@@ -41,7 +41,11 @@
         </form>
     <br>
     <h5 id ="myHeader"></h5>
-    <h5 id ="accuracyScore"></h5>
+    <div style="display: flex; justify-content: center">
+        <h5 id ="avgRmse" style="margin-right: 25px;"></h5>
+        <h5 id ="percentChange" style="margin-right: 25px;"></h5>
+        <h5 id ="accuracyScore"></h5>
+    </div>
 
     <div class="graph">
         <canvas id="myChart"></canvas>
@@ -50,11 +54,15 @@
  
     <script type=text/javascript>
         //myHeader.innerText = "Volume Tests should be " + {{ prediction_data | safe }}["{{last_date | safe}}"];
+        avgRmse.innerText = "Avg. RMSE: " + {{ avg_rmse | safe }};
+        percentChange.innerText = {{ percent_change | safe }} > 0 ? "Percent Change: +" + {{ percent_change | safe }} + "%" : "Percent Change: " + {{ percent_change | safe }} + "%" ;
         accuracyScore.innerText = "Accuracy Score: " + {{ accuracy_score | safe }} + "%";
 
         console.log({{ input_data | safe }})
         console.log({{ prediction_data | safe }})
         console.log({{ accuracy_score | safe }})
+        console.log({{ avg_rmse | safe }})
+        console.log({{ percent_change | safe }})
 
         // initalize variables
         dates = []

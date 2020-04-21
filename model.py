@@ -100,7 +100,7 @@ for company in company_list:
         #model.add(LSTM(128, kernel_regularizer=l2(0.01), recurrent_regularizer=l2(0.01), bias_regularizer=l2(0.01), input_shape=(train_X.shape[1], train_X.shape[2])))
         model.add(Dropout(0.1))
         #model.add(BatchNormalization())
-        model.add(Dense(n_predict, kernel_initializer='lecun_uniform', activation='relu'))
+        model.add(Dense(n_predict, kernel_initializer='lecun_uniform', activation='hard_sigmoid'))
         optimizer = Adam(lr=0.001, decay=1e-6)
         model.compile(loss='mae', optimizer=optimizer, metrics=['accuracy'])
         

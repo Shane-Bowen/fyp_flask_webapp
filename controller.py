@@ -1,5 +1,6 @@
 # Import libraries
 import numpy as np
+from math import sqrt
 from numpy import concatenate
 from datetime import datetime, timedelta
 from sklearn.preprocessing import MinMaxScaler
@@ -7,6 +8,7 @@ from pandas import read_csv
 from pandas import DataFrame
 from pandas import concat
 from tensorflow import keras
+from sklearn.metrics import mean_squared_error
 
 # convert series to supervised learning & normalize input variables
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
@@ -111,7 +113,14 @@ def history_accuracy(df, model, n_predict, scaler):
         pred_arr = np.append(pred_arr, inv_prediction, axis=1)
 
     # slice prediction we need  
-    pred_arr = pred_arr[:,1:]        
+    pred_arr = pred_arr[:,1:]
+
+    # calculate RMSE
+    rmse_list = []
+    for i in range(0, pred_arr.shape[1]):
+        rmse = sqrt(mean_squared_error(test_y[:, i], pred_arr[:, i]))
+        rmse_list.append(rmse)
+    print('Avg. RMSE: ', )
         
     # calculate accuracy score based on expected and predicted value
     accuracy_scores = []
@@ -126,7 +135,7 @@ def history_accuracy(df, model, n_predict, scaler):
                 if np.isnan(score) == False:
                     accuracy_scores.append(score)
 
-    return round(np.mean(accuracy_scores), 2), test_X, scaler
+    return round(np.mean(accuracy_scores), 2), round(np.mean(rmse_list), 2), test_X, scaler
 
 def get_prediciton(company_id, n_predict):
 
@@ -146,7 +155,7 @@ def get_prediciton(company_id, n_predict):
     scaler = MinMaxScaler(feature_range=(0, 1))
 
     # history accuracy
-    accuracy_score, test_X, scaler = history_accuracy(df, model, int(n_predict), scaler)
+    accuracy_score, avg_rmse, test_X, scaler = history_accuracy(df, model, int(n_predict), scaler)
 
     # specify the number of days and features 
     n_days = 7
@@ -165,10 +174,12 @@ def get_prediciton(company_id, n_predict):
     end_date = cur_date + timedelta(days=int(n_predict))
     
     i = 0
+    prediction_data_sum = 0
     # append predictions to dictionary
     while cur_date < end_date:
         cur_date += timedelta(days=1)
         prediction_data[cur_date.strftime('%Y-%m-%d')] = int(round(inv_prediction[0][i]))
+        prediction_data_sum += int(round(inv_prediction[0][i]))
         i += 1
         
     # specify cur_date and end_date
@@ -181,4 +192,17 @@ def get_prediciton(company_id, n_predict):
         cur_date += timedelta(days=1)
         input_data[cur_date.strftime("%Y-%m-%d")] = df.loc[cur_date.strftime("%Y-%m-%d")]['volume_tests']
 
-    return input_data, prediction_data, accuracy_score
+    # specify cur_date and end_date
+    cur_date = datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d")
+    end_date = cur_date
+    cur_date -= timedelta(days=int(n_predict))
+    
+    # calcuate input data sum in relation to n_prediction
+    input_data_sum = 0
+    while cur_date < end_date:
+        cur_date += timedelta(days=1)
+        input_data_sum += df.loc[cur_date.strftime("%Y-%m-%d")]['volume_tests']
+        
+    percent_change = ((prediction_data_sum - input_data_sum) / input_data_sum) * 100
+
+    return input_data, prediction_data, accuracy_score, avg_rmse, round(percent_change, 2)
