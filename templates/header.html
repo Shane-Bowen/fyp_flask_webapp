@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Volume Tests Predictor</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <ul class="flashes" style="margin-top: 50px;">
+         {% for message in messages %} 
+          <div class="message_flash">{{ message }}</div>
+         {% endfor %}
+     </ul>
+    {% endif %}
+    {% endwith %}
+    {% block body %}
+    {% endblock %}
+</head>
+
+<header>
+    <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
+        <ul class="navbar-nav ml-md-auto" style="padding: 10px; margin-right:10px; margin-top:5px; height:42px;">
+            <h6>
+                {% if session.logged_in %}
+                    <p style="color:rgba(255,255,255,.75); display: inline-flex; margin-right:15px;">{{ session.email }}</p>
+                    <a href="/logout/" style="color:rgba(255,255,255,.75)"><span class="glyphicon glyphicon-log-out"></span> Logout </a>
+                {% else %}
+                    <a href="/login/" style="color:rgba(255,255,255,.75); margin-right:15px;"><span class="glyphicon glyphicon-log-in"></span> Login </a>
+                    <a href="/register/" style="color:rgba(255,255,255,.75)"><span class="glyphicon glyphicon-pencil"></span> Sign up</a>
+                {% endif %}
+            </h6>
+        </ul>
+    </nav>
+</header>

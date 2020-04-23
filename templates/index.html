@@ -1,21 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Volume Tests Predictor</title>    
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
-</head>
+ 
+{% extends "header.html" %}
+{% block body %}
 
-<body>
-<h1 style="margin-top: 15px">Volume Tests Predictor</h1>
+<body class="text-center">
+<h1 style="margin-top: 100px">Volume Tests Predictor</h1>
  <div class="main_div">
         <form action="{{ url_for('predict')}}"method="post">
             <div class="form-row" style="margin: 15px auto; width: fit-content; display: inline-flex;">
                 <div class="col" style="margin: auto; width: 200px;">
-                    <select class="custom-select" type="number" name="company_id" required="required">
+                    <select class="custom-select" type="number" name="company_id" required="required" value=2>
                         <option selected disabled value=""> Select Company</option>
                         <option value=2>Company A</option>
                         <option value=9>Company B</option>
@@ -135,3 +128,5 @@
 
 </body>
 </html>
+
+{% endblock %}
