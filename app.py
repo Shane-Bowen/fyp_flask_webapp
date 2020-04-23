@@ -3,12 +3,8 @@ import numpy as np
 import gc
 from flask import Flask, request, jsonify, render_template, flash, url_for, redirect, session
 from controller import get_prediciton
-
-from wtforms import Form, StringField, PasswordField, validators
 from passlib.hash import sha256_crypt
-
 from functools import wraps
-import MySQLdb
 from MySQLdb import escape_string
 from dbconnect import connection
 
@@ -29,15 +25,12 @@ def login_required(f):
 @app.route('/')
 @login_required
 def home():
-
     input_data, prediction_data, accuracy_score, avg_rmse, percent_change = get_prediciton('2', '7')
     return render_template('index.html', input_data=input_data, prediction_data=prediction_data, accuracy_score=accuracy_score, avg_rmse=avg_rmse, percent_change=percent_change)
-    #return render_template('index.html')
 
 @app.route('/predict',methods=['POST'])
 @login_required
 def predict():
-
     input_data, prediction_data, accuracy_score, avg_rmse, percent_change = get_prediciton(request.form['company_id'], request.form['predict_days'])
     #last_date = list(prediction_data.keys())[-1]
     
@@ -77,28 +70,22 @@ def login_page():
         error = "Invalid Credentials, Try again"
         return render_template("login.html", error=error) 
 
-class RegistrationForm(Form):
-    email = StringField('Email', [validators.length(min=6, max=50), validators.Email(message = 'Please enter an email address')])
-    password = PasswordField('Password', [validators.DataRequired(),
-                                            validators.EqualTo('confirm', message='Password Must Match')])
-    confirm = PasswordField('Repeat Password')
-
 @app.route('/register/', methods=["GET","POST"])
 def register_page():
+    error = ''
     try:
-        form = RegistrationForm(request.form)
-
-        if request.method == "POST" and form.validate():
-            email = form.email.data
-            password = sha256_crypt.encrypt((str(form.password.data)))
+        if request.method == "POST":
+            email = request.form['email']
+            password = sha256_crypt.encrypt((str(request.form['password'])))
             c, conn = connection()
 
             sql = "SELECT * FROM users WHERE email = %s"
             val = (escape_string(email), )
             x = c.execute(sql, val)
             
-            if int(x) > 0:
-                return render_template("register.html", form=form)
+            if int(x) > 0 or request.form['password'] != request.form['confirm']:
+                error = "Invalid Credentials, Try again"
+                return render_template("register.html", error=error)
 
             else:
                 sql = "INSERT INTO users (email, password) VALUES (%s, %s)"
@@ -116,7 +103,7 @@ def register_page():
 
                 return redirect(url_for('home'))
         
-        return render_template("register.html", form=form)
+        return render_template("register.html", error=error)
 
     except Exception as e:
         return(str(e))
