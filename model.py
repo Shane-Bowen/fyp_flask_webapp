@@ -8,6 +8,7 @@ from pandas import DataFrame
 from pandas import concat
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import KFold
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Dense, Dropout, LSTM, BatchNormalization
@@ -89,27 +90,42 @@ for company in company_list:
         train_X, train_y = train[:, :n_obs], train[:, -n_predict_obs::n_features]
         test_X, test_y = test[:, :n_obs], test[:, -n_predict_obs::n_features]
         
+        X, y = values[:, :n_obs], values[:, -n_predict_obs::n_features]
+        X = X.reshape((X.shape[0], n_days, n_features))
+        
         # reshape input to be 3D [samples, timesteps, features]
         train_X = train_X.reshape((train_X.shape[0], n_days, n_features))
         test_X = test_X.reshape((test_X.shape[0], n_days, n_features))
-    
+        
         # design LSTM Model
         model = Sequential()
         
-        model.add(LSTM(128, input_shape=(train_X.shape[1], train_X.shape[2])))
+        model.add(LSTM(32, input_shape=(train_X.shape[1], train_X.shape[2])))
         #model.add(LSTM(128, kernel_regularizer=l2(0.01), recurrent_regularizer=l2(0.01), bias_regularizer=l2(0.01), input_shape=(train_X.shape[1], train_X.shape[2])))
-        model.add(Dropout(0.1))
+        model.add(Dropout(0.2))
         #model.add(BatchNormalization())
-        model.add(Dense(n_predict, kernel_initializer='lecun_uniform', activation='hard_sigmoid'))
+        model.add(Dense(n_predict, kernel_initializer='lecun_uniform', activation='relu'))
         optimizer = Adam(lr=0.001, decay=1e-6)
-        model.compile(loss='mae', optimizer=optimizer, metrics=['accuracy'])
+        model.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
         
-        # fit Model
-        model.fit(train_X, train_y, epochs=100, batch_size=100, validation_data=(test_X, test_y), verbose=2, shuffle=False)
+        num_splits = 10
         
-        score, acc = model.evaluate(test_X, test_y)
-        print('Test score:', score)
-        print('Test accuracy:', acc)
+        # k-fold cross validation
+        kf = KFold(n_splits=num_splits)
+        kf.get_n_splits(X)
+        KFold(n_splits=num_splits, random_state=None, shuffle=False)
+        
+        for train_index, test_index in kf.split(X):
+            
+            X_train, X_test = X[train_index], X[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+    
+            # fit Model
+            model.fit(X_train, y_train, epochs=100, batch_size=32, validation_data=(X_test, y_test), verbose=2, shuffle=False)
+        
+            score, acc = model.evaluate(test_X, test_y)
+            print('Test score:', score)
+            print('Test accuracy:', acc)
         
         # make a prediction
         yhat = model.predict(test_X)

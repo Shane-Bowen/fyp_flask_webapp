@@ -25,16 +25,15 @@ def login_required(f):
 @app.route('/')
 @login_required
 def home():
-    input_data, prediction_data, accuracy_score, avg_rmse, percent_change = get_prediciton('2', '7')
-    return render_template('index.html', input_data=input_data, prediction_data=prediction_data, accuracy_score=accuracy_score, avg_rmse=avg_rmse, percent_change=percent_change)
+    input_data, prediction_data, accuracy_score, avg_rmse, avg_mae, percent_change = get_prediciton('2', '7')
+    return render_template('index.html', input_data=input_data, prediction_data=prediction_data, accuracy_score=accuracy_score, avg_rmse=avg_rmse, avg_mae=avg_mae, percent_change=percent_change)
 
 @app.route('/predict',methods=['POST'])
 @login_required
 def predict():
-    input_data, prediction_data, accuracy_score, avg_rmse, percent_change = get_prediciton(request.form['company_id'], request.form['predict_days'])
+    input_data, prediction_data, accuracy_score, avg_rmse, avg_mae, percent_change = get_prediciton(request.form['company_id'], request.form['predict_days'])
     #last_date = list(prediction_data.keys())[-1]
-    
-    return render_template('index.html', input_data=input_data, prediction_data=prediction_data, accuracy_score=accuracy_score, avg_rmse=avg_rmse, percent_change=percent_change)
+    return render_template('index.html', input_data=input_data, prediction_data=prediction_data, accuracy_score=accuracy_score, avg_rmse=avg_rmse, avg_mae=avg_mae, percent_change=percent_change)
 
 @app.route("/logout/")
 @login_required

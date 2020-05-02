@@ -87,6 +87,8 @@ def history_accuracy(df, n_days, n_features, n_predict, scaler, model):
     test_X,= values[:, :n_obs], 
     test_y = n_values[:, -n_predict_obs::n_features]
     
+    inv_test_y = values[:, -n_predict_obs::n_features] 
+    
     # reshape input to be 3D [samples, timesteps, features]
     test_X = test_X.reshape((test_X.shape[0], n_days, n_features))
     
@@ -119,15 +121,15 @@ def history_accuracy(df, n_days, n_features, n_predict, scaler, model):
         
     # calculate accuracy score based on expected and predicted
     accuracy_scores = []    
-    for i in range(pred_arr.shape[0]):
-        for j in range(pred_arr.shape[1]):
-            if pred_arr[i][j] > test_y[i][j]:
-                score = test_y[i][j] / pred_arr[i][j] * 100
-                if np.isnan(score) == False:
+    for i in range(prediction.shape[0]):
+        for j in range(prediction.shape[1]):
+            if prediction[i][j] > inv_test_y[i][j]:
+                score = inv_test_y[i][j] / prediction[i][j] * 100
+                if np.isnan(score) == False and score > 0:
                     accuracy_scores.append(score)
             else:
-                score = pred_arr[i][j] / test_y[i][j] * 100
-                if np.isnan(score) == False:
+                score = prediction[i][j] / inv_test_y[i][j] * 100
+                if np.isnan(score) == False and score > 0:
                     accuracy_scores.append(score)
     
     return round(np.mean(accuracy_scores), 2), test_X
@@ -205,5 +207,5 @@ def get_prediction(company_id, n_predict):
     print(prediction_data)
 
 company_id = '2'
-n_predict = 14
+n_predict = 7
 get_prediction(company_id, n_predict)

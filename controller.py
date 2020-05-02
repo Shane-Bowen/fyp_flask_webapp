@@ -8,7 +8,7 @@ from pandas import read_csv
 from pandas import DataFrame
 from pandas import concat
 from tensorflow import keras
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 # convert series to supervised learning & normalize input variables
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
@@ -92,6 +92,9 @@ def history_accuracy(df, model, n_predict, scaler):
     test_X,= values[:, :n_obs], 
     test_y = n_values[:, -n_predict_obs::n_features]
 
+    # normalized test y values
+    inv_test_y = values[:, -n_predict_obs::n_features] 
+
     # reshape input to be 3D [samples, timesteps, features]
     test_X = test_X.reshape((test_X.shape[0], n_days, n_features))
 
@@ -121,21 +124,28 @@ def history_accuracy(df, model, n_predict, scaler):
         rmse = sqrt(mean_squared_error(test_y[:, i], pred_arr[:, i]))
         rmse_list.append(rmse)
     print('Avg. RMSE: ', )
+
+    # calculate MAE
+    mae_list = []
+    for i in range(0, pred_arr.shape[1]):
+        mae = mean_absolute_error(test_y[:, i], pred_arr[:, i])
+        mae_list.append(mae)
+    print('Avg. MAE: ', )
         
     # calculate accuracy score based on expected and predicted value
     accuracy_scores = []
-    for i in range(pred_arr.shape[0]):
-        for j in range(pred_arr.shape[1]):
-            if pred_arr[i][j] > test_y[i][j]:
-                score = test_y[i][j] / pred_arr[i][j] * 100
-                if np.isnan(score) == False:
+    for i in range(prediction.shape[0]):
+        for j in range(prediction.shape[1]):
+            if prediction[i][j] > inv_test_y[i][j]:
+                score = inv_test_y[i][j] / prediction[i][j] * 100
+                if np.isnan(score) == False and score > 0:
                     accuracy_scores.append(score)
             else:
-                score = pred_arr[i][j] / test_y[i][j] * 100
-                if np.isnan(score) == False:
+                score = prediction[i][j] / inv_test_y[i][j] * 100
+                if np.isnan(score) == False and score > 0:
                     accuracy_scores.append(score)
 
-    return round(np.mean(accuracy_scores), 2), round(np.mean(rmse_list), 2), test_X, scaler
+    return round(np.mean(accuracy_scores), 2), round(np.mean(rmse_list), 2), round(np.mean(mae_list), 2), test_X, scaler
 
 def get_prediciton(company_id, n_predict):
 
@@ -155,7 +165,7 @@ def get_prediciton(company_id, n_predict):
     scaler = MinMaxScaler(feature_range=(0, 1))
 
     # history accuracy
-    accuracy_score, avg_rmse, test_X, scaler = history_accuracy(df, model, int(n_predict), scaler)
+    accuracy_score, avg_rmse, avg_mae, test_X, scaler = history_accuracy(df, model, int(n_predict), scaler)
 
     # specify the number of days and features 
     n_days = 7
@@ -205,4 +215,4 @@ def get_prediciton(company_id, n_predict):
         
     percent_change = ((prediction_data_sum - input_data_sum) / input_data_sum) * 100
 
-    return input_data, prediction_data, accuracy_score, avg_rmse, round(percent_change, 2)
+    return input_data, prediction_data, accuracy_score, avg_rmse, avg_mae, round(percent_change, 2)

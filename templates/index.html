@@ -53,9 +53,10 @@
 
         console.log({{ input_data | safe }})
         console.log({{ prediction_data | safe }})
-        console.log({{ accuracy_score | safe }})
-        console.log({{ avg_rmse | safe }})
-        console.log({{ percent_change | safe }})
+        console.log('Percent Change:', {{ percent_change | safe }})
+        console.log('Avg RMSE:', {{ avg_rmse | safe }})
+        console.log('Avg. MAE:', {{ avg_mae | safe }})
+        console.log('Accuracy Score:', {{ accuracy_score | safe }})
 
         // initalize variables
         dates = []
