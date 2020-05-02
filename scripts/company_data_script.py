@@ -864,67 +864,78 @@ def main(company_list, outage_threshold, start_date, end_date):
                 values_dict = daily_outage(fail, outage_duration, company, start_date, end_date, values_dict)
 
         print(values_dict)
+        print(company_min_commit)
 
         #Write to CSV File
         for date, dictionary in values_dict.items():
-            cur_date = datetime.strptime(date, '%Y-%m-%d') #convert to date object
-            last_date_of_month = datetime(cur_date.year, cur_date.month, 1) + relativedelta(months=1, days=-1)
-            key = last_date_of_month.strftime("%Y-%m-%d") #convert to string
 
-            time = date
-            date = cur_date.day
-            month = cur_date.month
-            year = cur_date.year
+            # check if dictionary is not empty
+            if len(dictionary) > 0:
+                cur_date = datetime.strptime(date, '%Y-%m-%d') #convert to date object
+                last_date_of_month = datetime(cur_date.year, cur_date.month, 1) + relativedelta(months=1, days=-1)
+                key = last_date_of_month.strftime("%Y-%m-%d") #convert to string
 
-            spring = [2, 3, 4]
-            summer = [5, 6, 7]
-            autumn = [8, 9, 10]
-            winter = [10, 11, 1]
+                time = date
+                date = cur_date.day
+                month = cur_date.month
+                year = cur_date.year
 
-            weekDays = ("Mon","Tues","Wed","Thurs","Fri","Sat","Sun")
-            weekday = [0, 1, 2, 3, 4]
+                spring = [2, 3, 4]
+                summer = [5, 6, 7]
+                autumn = [8, 9, 10]
+                winter = [10, 11, 1]
 
-            day = weekDays[cur_date.weekday()]
-            if cur_date.weekday() in weekday:
-                isWeekend = 0
-            else:
-                isWeekend = 1
+                weekDays = ("Mon","Tues","Wed","Thurs","Fri","Sat","Sun")
+                weekday = [0, 1, 2, 3, 4]
 
-            if month in spring:
-                season = 'Spring'
-            elif month in summer:
-                season = 'Summer'
-            elif month in autumn:
-                season = 'Autumn'
-            elif month in winter:
-                season = 'Winter'
+                day = weekDays[cur_date.weekday()]
+                if cur_date.weekday() in weekday:
+                    isWeekend = 0
+                else:
+                    isWeekend = 1
 
-            if 'pesq' not in dictionary: #if key not in dictionary
-                dictionary['pesq'] = 0
-            if 'quality_too_poor' not in dictionary:
-                dictionary['quality_too_poor'] = 0
-            if 'busy' not in dictionary:
-                dictionary['busy'] = 0
-            if 'unable' not in dictionary:
-                dictionary['unable'] = 0
-            if 'outage' not in dictionary:
-                dictionary['outage'] = 0
-            if 'test_types' not in dictionary:
-                dictionary['test_types'] = []
-            if 'numbers' not in dictionary:
-                dictionary['numbers'] = 0
-            if 'followup' not in dictionary:
-                dictionary['followup'] = 0
-            if 'volume' not in dictionary:
-                dictionary['volume'] = 0
+                season = ''
+                if month in spring:
+                    season = 'Spring'
+                elif month in summer:
+                    season = 'Summer'
+                elif month in autumn:
+                    season = 'Autumn'
+                elif month in winter:
+                    season = 'Winter'
 
-            #convert days to hours
-            if('outage' in dictionary and dictionary['outage'] != 0):
-                hours = round(float(dictionary['outage'].total_seconds() / 3600), 2) # convert to hours
-            else:
-                hours = 0
-            
-            writer.writerow([dictionary['volume'], company, company_type, time, date, month, year, day, isWeekend, season, dictionary['pesq'], dictionary['quality_too_poor'], dictionary['busy'], dictionary['unable'], hours, len(dictionary['test_types']), dictionary['numbers'], dictionary['followup'], company_min_commit[key].values[0]])
+                if 'pesq' not in dictionary: #if key not in dictionary
+                    dictionary['pesq'] = 0
+                if 'quality_too_poor' not in dictionary:
+                    dictionary['quality_too_poor'] = 0
+                if 'busy' not in dictionary:
+                    dictionary['busy'] = 0
+                if 'unable' not in dictionary:
+                    dictionary['unable'] = 0
+                if 'outage' not in dictionary:
+                    dictionary['outage'] = 0
+                if 'test_types' not in dictionary:
+                    dictionary['test_types'] = []
+                if 'numbers' not in dictionary:
+                    dictionary['numbers'] = 0
+                if 'followup' not in dictionary:
+                    dictionary['followup'] = 0
+                if 'volume' not in dictionary:
+                    dictionary['volume'] = 0
+                if key not in company_min_commit:
+                    company_min_commit[key] = float('NaN')
+
+                print(company_min_commit['2019-01-31'])
+                print(company_min_commit['2019-01-31'].values[0])
+                print(company_min_commit[key].values[0])
+
+                #convert days to hours
+                if('outage' in dictionary and dictionary['outage'] != 0):
+                    hours = round(float(dictionary['outage'].total_seconds() / 3600), 2) # convert to hours
+                else:
+                    hours = 0
+                
+                writer.writerow([dictionary['volume'], company, company_type, time, date, month, year, day, isWeekend, season, dictionary['pesq'], dictionary['quality_too_poor'], dictionary['busy'], dictionary['unable'], hours, len(dictionary['test_types']), dictionary['numbers'], dictionary['followup'], company_min_commit[key].values[0]])
     print("Script Finished")
     f.close()
 
