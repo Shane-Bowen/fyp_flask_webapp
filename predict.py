@@ -1,12 +1,13 @@
 # Import libraries
 import numpy as np
+import matplotlib.pyplot as plt
 from numpy import concatenate
 from math import sqrt
 from pandas import read_csv
 from pandas import DataFrame
 from pandas import concat
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 from datetime import datetime, timedelta
 from tensorflow import keras
 import warnings
@@ -111,13 +112,21 @@ def history_accuracy(df, n_days, n_features, n_predict, scaler, model):
     # slice prediction we need
     pred_arr = pred_arr[:,1:]
     
-    rmse_list = []
     # calculate RMSE
+    rmse_list = []
     for i in range(0, pred_arr.shape[1]):
         rmse = sqrt(mean_squared_error(test_y[:, i], pred_arr[:, i]))
         rmse_list.append(rmse)
         print('t+{} RMSE: {:.3f}'.format(i+1, rmse))
     print('Avg. RMSE: ', np.mean(rmse_list))
+    
+    # calculate MAE
+    mae_list = []
+    for i in range(0, pred_arr.shape[1]):
+        mae = mean_absolute_error(test_y[:, i], pred_arr[:, i])
+        mae_list.append(mae)
+        print('t+{} RMSE: {:.3f}'.format(i+1, mae))
+    print('Avg. MAE: ', np.mean(mae_list))
         
     # calculate accuracy score based on expected and predicted
     accuracy_scores = []    
@@ -132,7 +141,7 @@ def history_accuracy(df, n_days, n_features, n_predict, scaler, model):
                 if np.isnan(score) == False and score > 0:
                     accuracy_scores.append(score)
     
-    return round(np.mean(accuracy_scores), 2), test_X
+    return round(np.mean(accuracy_scores), 2), round(np.mean(rmse_list), 2), round(np.mean(mae_list), 2), test_X
 
 def get_input_predict_data(df, test_X, n_days, n_features, n_predict, scaler, model):
     
@@ -180,32 +189,85 @@ def get_input_predict_data(df, test_X, n_days, n_features, n_predict, scaler, mo
         
     return input_data, prediction_data
     
-def get_prediction(company_id, n_predict):
+def get_prediction(company_arr, n_predict_arr):
     
-    # store variables        
-    n_days = 7
+    score_arr = []
+    rmse_arr = []
+    mae_arr = []
     
-    # get model for that company
-    model = keras.models.load_model(f"./models/model_{company_id}_n_{n_predict}.h5")
+    for company_id in company_arr:
     
-    # load dataset
-    df = read_csv(f'./reports/company_report_' + company_id + '.csv', header=0, index_col="time")
-    df = df[['volume_tests', 'date', 'month', 'is_weekend', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'min_commit']]
-    df = df.dropna(axis='columns')
+        for n_predict in n_predict_arr:
+                    
+            # store variables
+            n_days = 7
+            
+            # get model for that company
+            model = keras.models.load_model(f"./models/model_{company_id}_n_{n_predict}.h5")
+            
+            # load dataset
+            df = read_csv(f'./reports/company_report_' + company_id + '.csv', header=0, index_col="time")
+            df = df[['volume_tests', 'date', 'month', 'is_weekend', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'min_commit']]
+            df = df.dropna(axis='columns')
+            
+            # specify the number of days, features
+            n_features = df.shape[1]
+            
+            # normalize features
+            scaler = MinMaxScaler(feature_range=(0, 1))
+            
+            score, rmse, mae, test_X = history_accuracy(df, n_days, n_features, n_predict, scaler, model)
+            input_data, prediction_data = get_input_predict_data(df, test_X, n_days, n_features, n_predict, scaler, model)
+            
+            score_arr.append(score)
+            rmse_arr.append(rmse)
+            mae_arr.append(mae)
+                        
+            print(score)
     
-    # specify the number of days, features
-    n_features = df.shape[1]
+# =============================================================================
+#     # Accuracy Score Plot
+#     x = [0, 1, 2, 3, 4]
+#     y = score_arr
+#     labels = ['A', 'B', 'C', 'D', 'E']
+#     
+#     plt.plot(x, y, 'b')
+#     plt.xticks(x, labels, rotation='horizontal')
+#     plt.xlabel("Companies")
+#     plt.ylabel("Percentage Score")
+#     plt.title("Accuracy Score")
+#     
+#     plt.show()
+# =============================================================================
+       
+    # RMSE Score Plot
+    x = [0, 1, 2, 3, 4]
+    y = rmse_arr
+    labels = ['A', 'B', 'C', 'D', 'E']
     
-    # normalize features
-    scaler = MinMaxScaler(feature_range=(0, 1))
+    plt.plot(x, y, 'b')
+    plt.xticks(x, labels, rotation='horizontal')
+    plt.xlabel("Companies")
+    plt.ylabel("Score")
+    plt.title("RMSE Score")
     
-    score, test_X = history_accuracy(df, n_days, n_features, n_predict, scaler, model)
-    input_data, prediction_data = get_input_predict_data(df, test_X, n_days, n_features, n_predict, scaler, model)
+    plt.show()
+        
+# =============================================================================
+#     # MAE Score Plot
+#     x = [0, 1, 2, 3, 4]
+#     y = mae_arr
+#     labels = ['n+1', 'n+7', 'n+14', 'n+21', 'n+28']
+#        
+#     plt.plot(x, y, 'b')
+#     plt.xticks(x, labels, rotation='horizontal')
+#     plt.xlabel("Number Days")
+#     plt.ylabel("Score")
+#     plt.title("MAE Score")
+# 
+#     plt.show()
+# =============================================================================
     
-    print(score)
-    print(input_data)
-    print(prediction_data)
-
-company_id = '2'
-n_predict = 7
-get_prediction(company_id, n_predict)
+company_arr = ['2', '9', '49', '93', '130']
+n_predict_arr = [1]
+get_prediction(company_arr, n_predict_arr)

@@ -123,14 +123,12 @@ def history_accuracy(df, model, n_predict, scaler):
     for i in range(0, pred_arr.shape[1]):
         rmse = sqrt(mean_squared_error(test_y[:, i], pred_arr[:, i]))
         rmse_list.append(rmse)
-    print('Avg. RMSE: ', )
 
     # calculate MAE
     mae_list = []
     for i in range(0, pred_arr.shape[1]):
         mae = mean_absolute_error(test_y[:, i], pred_arr[:, i])
         mae_list.append(mae)
-    print('Avg. MAE: ', )
         
     # calculate accuracy score based on expected and predicted value
     accuracy_scores = []
@@ -159,8 +157,11 @@ def get_prediciton(company_id, n_predict):
     # load dataset
     df = read_csv(f'./reports/company_report_' + company_id + '.csv', header=0, index_col="time")
     df = df[['volume_tests', 'date', 'month', 'is_weekend', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'min_commit']]
-    df = df.dropna(axis='columns')
-    
+
+    # drop columns where nan or replace nan with mean
+    df = df.dropna(axis='columns', how='all')
+    df.iloc[:, -1] = df.iloc[:, -1].fillna(df.iloc[:, -1].mean())
+
     # scaler
     scaler = MinMaxScaler(feature_range=(0, 1))
 
