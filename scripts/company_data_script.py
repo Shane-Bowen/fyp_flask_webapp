@@ -869,159 +869,172 @@ def ignore_company_ids():
     return company_ids
 
 # # sort csv with multiple customer data by time
-# def sort_csv():
-#     dirname = os.path.dirname(__file__)
-#     filename = os.path.join(dirname, "../reports/company_report.csv")
-#     reader = csv.reader(open(filename), delimiter=",")
-#     header = next(reader)
-#     sortedlist = sorted(reader, key=operator.itemgetter(3))
-#     print(len(sortedlist))
+def sort_csv():
+    dirname = os.path.dirname(__file__)
+    filename = os.path.join(dirname, "../reports/company_report.csv")
+    reader = csv.reader(open(filename), delimiter=",")
+    header = next(reader)
+    sortedlist = sorted(reader, key=operator.itemgetter(3))
+    print(len(sortedlist))
 
-#     filename = os.path.join(dirname, "../reports/company_report_sorted.csv")
-#     writer = csv.writer(open(filename, "w+"))
-#     writer.writerow(header)
-#     for row in sortedlist:
-#         print(row)
-#         writer.writerow(row)
+    filename = os.path.join(dirname, "../reports/company_report_sorted.csv")
+    writer = csv.writer(open(filename, "w+"))
+    writer.writerow(header)
+    for row in sortedlist:
+        print(row)
+        writer.writerow(row)
 
 def main(company_list, outage_threshold, start_date, end_date, ignore_companies):
     # This function calls all the different functions, stores result in a dictionary and writes to a csv file in the current directory (company_report.csv)  
 
+    not_list = []
+    # for val in range(1, 9):
+    #     not_list.append(val)
+
     # loop through each company_id in list
     for company_id in company_list:
         if company_id not in ignore_companies:
-            dirname = os.path.dirname(__file__)
-            filename = os.path.join(dirname, "../reports/company_report.csv")
-            
-            # check if file exists (append to existing file)
-            if os.path.isfile(filename):
-                f = open(filename, "a+")
-                writer = csv.writer(f)
-            else: # create new file
-                f = open(filename, "w+")
-                writer = csv.writer(f)
-                writer.writerow(['company_name', 'company_id', 'company_type', 'time', 'date', 'month', 'year', 'day', 'is_weekend', 'season', 'avg_pesq_score', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'followup_tests', 'min_commit', 'has_min_commit', 'volume_tests'])
-
-            # Get company_name and company_type
-            company_name = get_company_name(company_id)[0]
-            company_type = getCompanyType(company_id)[0]
-
-            # Intitialzie Dictionary
-            values_dict = {}
-            delta = timedelta(days=1)
-            cur_date = start_date
-            while cur_date <= end_date:
-                values_dict[str(cur_date)] = {}
-                cur_date += delta
-            
-            # Get Pesq Scores
-            for table in getPesqTable(company_id):
-                print(table)
-                values_dict = getPesqScores(table[1], company_id, start_date, end_date, values_dict)
-            print(values_dict)
-
-            # Populate values dict with input features
-            for table in getJobProcessingTable(company_id):
-                values_dict = daily_volume_tests(table[1], company_id, start_date, end_date, values_dict)
-                values_dict = daily_quality_too_poor(table[1], company_id, start_date, end_date, values_dict)
-                values_dict = daily_number_busy(table[1], company_id, start_date, end_date, values_dict)
-                values_dict = daily_number_unable(table[1], company_id, start_date, end_date, values_dict)
-                values_dict = daily_numbers_tested(table[1], company_id, start_date, end_date, values_dict)
-                values_dict = daily_followup_tests(table[1], company_id, start_date, end_date, values_dict)
-                values_dict = daily_manual_tests(company_id, start_date, end_date, values_dict)
-                for fail in findInitialOutage(table[1], company_id, start_date, end_date):
-                    print(fail)
-                    outage_duration = findOutageEnd(fail, outage_threshold, company_id, start_date, end_date)
-                    values_dict = daily_outage(fail, outage_duration, company_id, start_date, end_date, values_dict)
-
-            # Get company_min_commit
-            company_min_commit = getMinCommit(company_id, start_date, end_date)
-            print(values_dict)
-
-            # Set boolean variable
-            ok = False
-            
-            # Write to CSV File
-            for date, dictionary in values_dict.items():
-
-                # don't write empty rows to csv file (i.e. wait until first record for volume of tests)
-                if 'volume' in dictionary:
-                    ok = True
+            if company_id not in not_list:
+                dirname = os.path.dirname(__file__)
+                filename = os.path.join(dirname, "../reports/company_report.csv")
                 
-                # if record found, start writing to csv file
-                if ok:
-                    cur_date = datetime.strptime(date, '%Y-%m-%d') #convert to date object
-                    last_date_of_month = datetime(cur_date.year, cur_date.month, 1) + relativedelta(months=1, days=-1)
-                    key = last_date_of_month.strftime("%Y-%m-%d") #convert to string
+                # check if file exists (append to existing file)
+                if os.path.isfile(filename):
+                    f = open(filename, "a+")
+                    writer = csv.writer(f)
+                else: # create new file
+                    f = open(filename, "w+")
+                    writer = csv.writer(f)
+                    writer.writerow(['company_name', 'company_id', 'company_type', 'time', 'date', 'month', 'year', 'day', 'is_weekend', 'season', 'avg_pesq_score', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'followup_tests', 'min_commit', 'has_min_commit', 'volume_tests', 'is_testing'])
 
-                    # get data information
-                    time = date
-                    date = cur_date.day
-                    month = cur_date.month
-                    year = cur_date.year
+                # Get company_name and company_type
+                company_name = get_company_name(company_id)[0]
+                company_type = getCompanyType(company_id)[0]
 
-                    # define months for seasons
-                    spring = [2, 3, 4]
-                    summer = [5, 6, 7]
-                    autumn = [8, 9, 10]
-                    winter = [11, 12, 1]
+                # Intitialzie Dictionary
+                values_dict = {}
+                delta = timedelta(days=1)
+                cur_date = start_date
+                while cur_date <= end_date:
+                    values_dict[str(cur_date)] = {}
+                    cur_date += delta
+                
+                # Get Pesq Scores
+                for table in getPesqTable(company_id):
+                    print(table)
+                    values_dict = getPesqScores(table[1], company_id, start_date, end_date, values_dict)
+                print(values_dict)
 
-                    # define weekdays
-                    weekDays = ("Mon","Tues","Wed","Thurs","Fri","Sat","Sun")
-                    weekday = [0, 1, 2, 3, 4]
+                # Populate values dict with input features
+                for table in getJobProcessingTable(company_id):
+                    values_dict = daily_volume_tests(table[1], company_id, start_date, end_date, values_dict)
+                    values_dict = daily_quality_too_poor(table[1], company_id, start_date, end_date, values_dict)
+                    values_dict = daily_number_busy(table[1], company_id, start_date, end_date, values_dict)
+                    values_dict = daily_number_unable(table[1], company_id, start_date, end_date, values_dict)
+                    values_dict = daily_numbers_tested(table[1], company_id, start_date, end_date, values_dict)
+                    values_dict = daily_followup_tests(table[1], company_id, start_date, end_date, values_dict)
+                    values_dict = daily_manual_tests(company_id, start_date, end_date, values_dict)
+                    for fail in findInitialOutage(table[1], company_id, start_date, end_date):
+                        print(fail)
+                        outage_duration = findOutageEnd(fail, outage_threshold, company_id, start_date, end_date)
+                        values_dict = daily_outage(fail, outage_duration, company_id, start_date, end_date, values_dict)
 
-                    # check if day is weekend
-                    day = weekDays[cur_date.weekday()]
-                    if cur_date.weekday() in weekday:
-                        isWeekend = 0
-                    else:
-                        isWeekend = 1
+                # Get company_min_commit
+                company_min_commit = getMinCommit(company_id, start_date, end_date)
+                print(values_dict)
 
-                    # check what season month is
-                    season = ''
-                    if month in spring:
-                        season = 'Spring'
-                    elif month in summer:
-                        season = 'Summer'
-                    elif month in autumn:
-                        season = 'Autumn'
-                    elif month in winter:
-                        season = 'Winter'
+                # Set boolean variable
+                ok = False
+                
+                # Write to CSV File
+                for date, dictionary in values_dict.items():
 
-                    # if key not in dictionary, set value to 0
-                    if 'pesq' not in dictionary: 
-                        dictionary['pesq'] = 0
-                    if 'quality_too_poor' not in dictionary:
-                        dictionary['quality_too_poor'] = 0
-                    if 'busy' not in dictionary:
-                        dictionary['busy'] = 0
-                    if 'unable' not in dictionary:
-                        dictionary['unable'] = 0
-                    if 'outage' not in dictionary:
-                        dictionary['outage'] = 0
-                    if 'test_types' not in dictionary:
-                        dictionary['test_types'] = []
-                    if 'numbers' not in dictionary:
-                        dictionary['numbers'] = 0
-                    if 'followup' not in dictionary:
-                        dictionary['followup'] = 0
-                    if 'volume' not in dictionary:
-                        dictionary['volume'] = 0
-
-                    # check if has min_commit
-                    has_min_commit = 1
-                    if key not in company_min_commit:
-                        company_min_commit[key] = float('NaN')
-                        has_min_commit = 0
-
-                    # convert days to hours
-                    if('outage' in dictionary and dictionary['outage'] != 0):
-                        hours = round(float(dictionary['outage'].total_seconds() / 3600), 2) # convert to hours
-                    else:
-                        hours = 0
+                    # don't write empty rows to csv file (i.e. wait until first record for volume of tests)
+                    if 'volume' in dictionary:
+                        ok = True
                     
-                    # write to csv
-                    writer.writerow([company_name, company_id, company_type, time, date, month, year, day, isWeekend, season, dictionary['pesq'], dictionary['quality_too_poor'], dictionary['busy'], dictionary['unable'], hours, len(dictionary['test_types']), dictionary['numbers'], dictionary['followup'], company_min_commit[key].values[0], has_min_commit, dictionary['volume']])
+                    # if record found, start writing to csv file
+                    if ok:
+                        cur_date = datetime.strptime(date, '%Y-%m-%d') #convert to date object
+                        last_date_of_month = datetime(cur_date.year, cur_date.month, 1) + relativedelta(months=1, days=-1)
+                        key = last_date_of_month.strftime("%Y-%m-%d") #convert to string
+
+                        # get data information
+                        time = date
+                        date = cur_date.day
+                        month = cur_date.month
+                        year = cur_date.year
+
+                        # define months for seasons
+                        spring = [2, 3, 4]
+                        summer = [5, 6, 7]
+                        autumn = [8, 9, 10]
+                        winter = [11, 12, 1]
+
+                        # define weekdays
+                        weekDays = ("Mon","Tues","Wed","Thurs","Fri","Sat","Sun")
+                        weekday = [0, 1, 2, 3, 4]
+
+                        # check if day is weekend
+                        day = weekDays[cur_date.weekday()]
+                        if cur_date.weekday() in weekday:
+                            isWeekend = 0
+                        else:
+                            isWeekend = 1
+
+                        # check what season month is
+                        season = ''
+                        if month in spring:
+                            season = 'Spring'
+                        elif month in summer:
+                            season = 'Summer'
+                        elif month in autumn:
+                            season = 'Autumn'
+                        elif month in winter:
+                            season = 'Winter'
+
+                        # boolean value to check if performed any tests, default is 1
+                        is_testing = 1
+
+                        # if key not in dictionary, set value to 0
+                        if 'pesq' not in dictionary: 
+                            dictionary['pesq'] = 0
+                        if 'quality_too_poor' not in dictionary:
+                            dictionary['quality_too_poor'] = 0
+                        if 'busy' not in dictionary:
+                            dictionary['busy'] = 0
+                        if 'unable' not in dictionary:
+                            dictionary['unable'] = 0
+                        if 'outage' not in dictionary:
+                            dictionary['outage'] = 0
+                        if 'test_types' not in dictionary:
+                            dictionary['test_types'] = []
+                        if 'numbers' not in dictionary:
+                            dictionary['numbers'] = 0
+                        if 'followup' not in dictionary:
+                            dictionary['followup'] = 0
+                        if 'volume' not in dictionary:
+                            dictionary['volume'] = 0
+                            is_testing = 0
+
+                        # check if has min_commit
+                        has_min_commit = 1
+                        if key not in company_min_commit:
+                            company_min_commit[key] = float('NaN')
+                            has_min_commit = 0
+
+                        if np.isnan(company_min_commit[key].values[0]) or company_min_commit[key].values[0] == 0:
+                            has_min_commit = 0
+
+                        # convert days to hours
+                        if('outage' in dictionary and dictionary['outage'] != 0):
+                            hours = round(float(dictionary['outage'].total_seconds() / 3600), 2) # convert to hours
+                        else:
+                            hours = 0
+                        
+                        # write to csv
+                        writer.writerow([company_name, company_id, company_type, time, date, month, year, day, isWeekend, season, dictionary['pesq'], dictionary['quality_too_poor'], dictionary['busy'], dictionary['unable'], hours, len(dictionary['test_types']), dictionary['numbers'], dictionary['followup'], company_min_commit[key].values[0], has_min_commit, dictionary['volume'], is_testing])
+    sort_csv()
     print("Script Finished")
     f.close()
 
