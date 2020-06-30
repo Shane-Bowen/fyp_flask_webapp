@@ -3,12 +3,12 @@ import numpy as np
 from math import sqrt
 from numpy import concatenate
 from datetime import datetime, timedelta
-from sklearn.preprocessing import MinMaxScaler
 from pandas import read_csv
 from pandas import DataFrame
 from pandas import concat
 from tensorflow import keras
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.preprocessing import MinMaxScaler
 
 # convert series to supervised learning & normalize input variables
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
@@ -143,6 +143,8 @@ def history_accuracy(df, model, n_predict, scaler):
                 if np.isnan(score) == False and score > 0:
                     accuracy_scores.append(score)
 
+
+
     return round(np.mean(accuracy_scores), 2), round(np.mean(rmse_list), 2), round(np.mean(mae_list), 2), test_X, scaler
 
 def get_prediciton(company_id, n_predict):
@@ -155,22 +157,24 @@ def get_prediciton(company_id, n_predict):
     model = keras.models.load_model(f"./models/model_{company_id}_n_{n_predict}.h5")
 
     # load dataset
-    df = read_csv(f'./reports/company_report_' + company_id + '.csv', header=0, index_col="time")
-    df = df[['volume_tests', 'date', 'month', 'is_weekend', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'min_commit']]
+    df = read_csv(f'./reports/company_report_sorted.csv', header=0, index_col="time")
+    
+    df_subset = df[df['company_id'] == company_id]
+    df_subset = df_subset[['volume_tests', 'date', 'month', 'is_weekend', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'min_commit']]
+    #df = df[['volume_tests', 'date', 'month', 'year', 'is_weekend', 'quality_too_poor', 'number_busy', 'temporarily_unable_test', 'outage_hrs', 'number_test_types', 'numbers_tested', 'min_commit', 'has_min_commit', 'is_testing']]
 
-    # drop columns where nan or replace nan with mean
-    df = df.dropna(axis='columns', how='all')
-    df.iloc[:, -1] = df.iloc[:, -1].fillna(df.iloc[:, -1].mean())
+    # fill nan with 0
+    df_subset['min_commit'] = df_subset['min_commit'].fillna(0)
 
     # scaler
     scaler = MinMaxScaler(feature_range=(0, 1))
 
     # history accuracy
-    accuracy_score, avg_rmse, avg_mae, test_X, scaler = history_accuracy(df, model, int(n_predict), scaler)
+    accuracy_score, avg_rmse, avg_mae, test_X, scaler = history_accuracy(df_subset, model, int(n_predict), scaler)
 
     # specify the number of days and features 
     n_days = 7
-    n_features = df.shape[1]
+    n_features = df_subset.shape[1]
 
     # set input features
     input_features = test_X[-1:]
@@ -181,7 +185,7 @@ def get_prediciton(company_id, n_predict):
     inv_prediction = invert_scailing(input_features, prediction, scaler)
 
     # specify cur_date and end_date
-    cur_date = datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d")
+    cur_date = datetime.strptime(df_subset.tail(1).index.item(), "%Y-%m-%d")
     end_date = cur_date + timedelta(days=int(n_predict))
     
     i = 0
@@ -194,17 +198,17 @@ def get_prediciton(company_id, n_predict):
         i += 1
         
     # specify cur_date and end_date
-    cur_date = datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d")
+    cur_date = datetime.strptime(df_subset.tail(1).index.item(), "%Y-%m-%d")
     end_date = cur_date
     cur_date -= timedelta(days=n_days)
 
     # append inputs to dictionary
     while cur_date < end_date:
         cur_date += timedelta(days=1)
-        input_data[cur_date.strftime("%Y-%m-%d")] = df.loc[cur_date.strftime("%Y-%m-%d")]['volume_tests']
+        input_data[cur_date.strftime("%Y-%m-%d")] = df_subset.loc[cur_date.strftime("%Y-%m-%d")]['volume_tests']
 
     # specify cur_date and end_date
-    cur_date = datetime.strptime(df.tail(1).index.item(), "%Y-%m-%d")
+    cur_date = datetime.strptime(df_subset.tail(1).index.item(), "%Y-%m-%d")
     end_date = cur_date
     cur_date -= timedelta(days=int(n_predict))
     
@@ -212,7 +216,7 @@ def get_prediciton(company_id, n_predict):
     input_data_sum = 0
     while cur_date < end_date:
         cur_date += timedelta(days=1)
-        input_data_sum += df.loc[cur_date.strftime("%Y-%m-%d")]['volume_tests']
+        input_data_sum += df_subset.loc[cur_date.strftime("%Y-%m-%d")]['volume_tests']
         
     percent_change = ((prediction_data_sum - input_data_sum) / input_data_sum) * 100
 
