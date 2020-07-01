@@ -14,12 +14,11 @@ model = api.model('Model', {
     "predict_days": fields.Integer(required = True)
 })
 
-@api.route('/predict_api')
+@api.route('/test_volume_predict')
 class Prediction(Resource):
 
     @api.expect(model)
     def post(self):
-
         input_data, prediction_data, accuracy_score, avg_rmse, avg_mae, percent_change = get_prediciton(request.json['company_id'], request.json['predict_days'])
         return {
             'input_data' : input_data,
